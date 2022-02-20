@@ -23,6 +23,7 @@ pub struct Segment<'a> {
 impl<'a> Segment<'a> {
     pub fn self_intersect<'b>(&'b self) -> Vec<Chunk<'b>> {
         let intersections = self.get_intersections_with(&self, true);
+        dbg!(&intersections);
         self.cut_into_chunks(intersections)
     }
 
@@ -141,6 +142,7 @@ impl<'a> Segment<'a> {
         let mut chunks = vec![];
         let mut add_if_length_over_threshold = |start, end| {
             let length = self.length_between(start, end);
+            println!("{start}, {end}, {}", length / significant_chunk_threshold);
             if length > significant_chunk_threshold {
                 chunks.push(Chunk {
                     parent: self.segment,
