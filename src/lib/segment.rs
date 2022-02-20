@@ -4,6 +4,7 @@ use gpx::TrackSegment;
 use gpx::Waypoint;
 
 use super::chunk::Chunk;
+use super::config::CHUNK_DISTANCE_THRESHOLD;
 use super::config::POINT_DISTANCE_THRESHOLD;
 use super::config::SELF_INTERSECTION_SAFETY_DISTANCE;
 use super::geom_utils::euclidean_distance;
@@ -20,24 +21,14 @@ pub struct Segment<'a> {
 }
 
 impl<'a> Segment<'a> {
-    pub fn self_intersect(&self) -> Vec<Chunk<'a>> {
+    pub fn self_intersect<'b>(&'b self) -> Vec<Chunk<'b>> {
         let intersections = self.get_intersections_with(&self, true);
         self.cut_into_chunks(intersections)
     }
 
-    pub fn intersect_with(&self, other: &Segment<'a>) -> Vec<Chunk<'a>> {
+    pub fn intersect_with<'b>(&'b self, other: &Segment<'a>) -> Vec<Chunk<'b>> {
         let intersections = self.get_intersections_with(other, false);
         self.cut_into_chunks(intersections)
-    }
-
-    pub fn get_average_distance_next_point(&self) -> f64 {
-        self.segment
-            .points
-            .iter()
-            .zip(self.segment.points[1..].iter())
-            .map(|(p1, p2)| euclidean_distance(p1, p2))
-            .sum::<f64>()
-            / (self.segment.points.len() - 1) as f64
     }
 
     pub fn get_intersections_with(
@@ -137,8 +128,47 @@ impl<'a> Segment<'a> {
         Box::new(slice_before.chain(slice_after))
     }
 
-    fn cut_into_chunks(&self, intersections: Vec<Intersection>) -> Vec<Chunk<'a>> {
-        dbg!(intersections);
-        todo!()
+    fn cut_into_chunks(&'a self, mut intersections: Vec<Intersection>) -> Vec<Chunk<'a>> {
+        let average_neighbour_distance = self.get_average_distance_next_point();
+        let significant_chunk_threshold = CHUNK_DISTANCE_THRESHOLD * average_neighbour_distance;
+        let start = Intersection { start: 0, end: 0 };
+        let end = Intersection {
+            start: self.segment.points.len() - 1,
+            end: self.segment.points.len() - 1,
+        };
+        intersections.insert(0, start);
+        intersections.push(end);
+        let mut chunks = vec![];
+        let mut add_if_length_over_threshold = |start, end| {
+            let length = self.length_between(start, end);
+            if length > significant_chunk_threshold {
+                chunks.push(Chunk {
+                    parent: self.segment,
+                    start,
+                    end,
+                });
+            }
+        };
+        for (i1, i2) in intersections.iter().zip(intersections[1..].iter()) {
+            add_if_length_over_threshold(i1.start, i1.end); // Add the intersection itself if it is long enough
+            add_if_length_over_threshold(i1.end, i2.start); // Add the chunk in between if it is long enough
+        }
+        chunks
+    }
+
+    fn length_between(&self, start: usize, end: usize) -> f64 {
+        if start == end {
+            return 0.0;
+        }
+        self.segment.points[start..end]
+            .iter()
+            .zip(self.segment.points[start + 1..end].iter())
+            .map(|(p1, p2)| euclidean_distance(p1, p2))
+            .sum::<f64>()
+    }
+
+    pub fn get_average_distance_next_point(&self) -> f64 {
+        let num_points = self.segment.points.len();
+        self.length_between(0, num_points) / (num_points - 1) as f64
     }
 }

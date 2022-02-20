@@ -33,7 +33,7 @@ impl<'a> SegmentSplitter<'a> {
         }
     }
 
-    pub fn add_chunk(chunks: &mut Vec<Chunk<'a>>, chunk: Chunk<'a>) {
+    pub fn add_chunk<'b>(chunks: &mut Vec<Chunk<'b>>, chunk: Chunk<'b>) {
         chunks.push(chunk);
         let _ = todo!();
     }

@@ -1,5 +1,7 @@
-use super::segment::Segment;
+use gpx::TrackSegment;
 
 pub struct Chunk<'a> {
-    pub parent: Segment<'a>,
+    pub parent: &'a TrackSegment,
+    pub start: usize,
+    pub end: usize,
 }
