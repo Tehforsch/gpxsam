@@ -1,4 +1,7 @@
+use std::iter;
+
 use gpx::TrackSegment;
+use gpx::Waypoint;
 
 use super::chunk::Chunk;
 use super::config::POINT_DISTANCE_THRESHOLD;
@@ -18,17 +21,13 @@ pub struct Segment<'a> {
 
 impl<'a> Segment<'a> {
     pub fn self_intersect(&self) -> Vec<Chunk<'a>> {
-        let intersections = self.get_self_intersections();
+        let intersections = self.get_intersections_with(&self, true);
         self.cut_into_chunks(intersections)
     }
 
     pub fn intersect_with(&self, other: &Segment<'a>) -> Vec<Chunk<'a>> {
         let intersections = self.get_intersections_with(other, false);
         self.cut_into_chunks(intersections)
-    }
-
-    pub fn get_self_intersections(&self) -> Vec<Intersection> {
-        self.get_intersections_with(&self, true)
     }
 
     pub fn get_average_distance_next_point(&self) -> f64 {
@@ -41,7 +40,11 @@ impl<'a> Segment<'a> {
             / (self.segment.points.len() - 1) as f64
     }
 
-    pub fn get_intersections_with(&self, other: &Segment<'a>, is_self: bool) -> Vec<Intersection> {
+    pub fn get_intersections_with(
+        &self,
+        other: &Segment<'a>,
+        other_is_self: bool,
+    ) -> Vec<Intersection> {
         let mut intersections: Vec<Intersection> = vec![];
         let average_neighbour_distance = self.get_average_distance_next_point();
         let point_threshold = POINT_DISTANCE_THRESHOLD * average_neighbour_distance;
@@ -53,27 +56,14 @@ impl<'a> Segment<'a> {
             .enumerate()
             .zip(self.segment.points[1..].iter())
         {
-            let search_start = if is_self {
-                // Make sure we only start searching for close points once we have found a point
-                // which is far enough away from the current point (and comes after the current point
-                // in the sequence)
-                let start_index = other
-                    .segment
-                    .points
-                    .iter()
-                    .enumerate()
-                    .find(|(j, p)| *j > i && euclidean_distance(p, p11) > safety_threshold)
-                    .map(|(j, _)| j);
-                match start_index {
-                    Some(start_index) => start_index,
-                    None => break,
-                }
+            let mut search_lines = if other_is_self {
+                // Make sure we only search for close points within the points that have moved
+                // far enough away from the current point
+                other.get_lines_at_safety_distance(i, safety_threshold)
             } else {
-                0
+                other.get_lines()
             };
-            let is_close = other.segment.points[search_start..]
-                .iter()
-                .zip(other.segment.points[search_start + 1..].iter())
+            let is_close = search_lines
                 .any(|(p21, p22)| line_segments_distance(p11, p12, p21, p22) < point_threshold);
             if is_close {
                 let last_intersection = intersections.last_mut();
@@ -94,6 +84,57 @@ impl<'a> Segment<'a> {
             }
         }
         intersections
+    }
+
+    fn get_lines<'b>(&'b self) -> Box<dyn Iterator<Item = (&Waypoint, &Waypoint)> + 'b> {
+        Box::new(
+            self.segment.points[..]
+                .iter()
+                .zip(self.segment.points[1..].iter()),
+        )
+    }
+
+    fn get_lines_at_safety_distance<'b>(
+        &'b self,
+        i: usize,
+        safety_threshold: f64,
+    ) -> Box<dyn Iterator<Item = (&Waypoint, &Waypoint)> + 'b> {
+        let start_index_after = self
+            .segment
+            .points
+            .iter()
+            .enumerate()
+            .filter(|(j, p)| {
+                *j > i && euclidean_distance(p, &self.segment.points[i]) > safety_threshold
+            })
+            .map(|(j, _)| j)
+            .min();
+        let end_index_before = self
+            .segment
+            .points
+            .iter()
+            .enumerate()
+            .filter(|(j, p)| {
+                *j < i && euclidean_distance(p, &self.segment.points[i]) > safety_threshold
+            })
+            .map(|(j, _)| j)
+            .max();
+        let mut slice_before = match end_index_before {
+            Some(end_index_before) => self.segment.points[0..end_index_before]
+                .iter()
+                .zip(self.segment.points[1..end_index_before].iter()),
+            // Uglily construct an empty slice to create the same type
+            None => [].iter().zip(&[]),
+        };
+
+        let mut slice_after = match start_index_after {
+            Some(start_index_after) => self.segment.points[start_index_after..]
+                .iter()
+                .zip(self.segment.points[start_index_after + 1..].iter()),
+            // Uglily construct an empty slice
+            None => [].iter().zip(&[]),
+        };
+        Box::new(slice_before.chain(slice_after))
     }
 
     fn cut_into_chunks(&self, intersections: Vec<Intersection>) -> Vec<Chunk<'a>> {
