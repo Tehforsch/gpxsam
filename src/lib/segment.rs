@@ -1,11 +1,10 @@
 use gpx::TrackSegment;
 
-use crate::lib::geom_utils::line_segments_close;
-use crate::lib::geom_utils::points_close;
-
 use super::chunk::Chunk;
+use super::config::POINT_DISTANCE_THRESHOLD;
 use super::config::SELF_INTERSECTION_SAFETY_DISTANCE;
 use super::geom_utils::euclidean_distance;
+use super::geom_utils::line_segments_distance;
 
 #[derive(Debug)]
 pub struct Intersection {
@@ -32,8 +31,21 @@ impl<'a> Segment<'a> {
         self.get_intersections_with(&self, true)
     }
 
+    pub fn get_average_distance_next_point(&self) -> f64 {
+        self.segment
+            .points
+            .iter()
+            .zip(self.segment.points[1..].iter())
+            .map(|(p1, p2)| euclidean_distance(p1, p2))
+            .sum::<f64>()
+            / (self.segment.points.len() - 1) as f64
+    }
+
     pub fn get_intersections_with(&self, other: &Segment<'a>, is_self: bool) -> Vec<Intersection> {
         let mut intersections: Vec<Intersection> = vec![];
+        let average_neighbour_distance = self.get_average_distance_next_point();
+        let point_threshold = POINT_DISTANCE_THRESHOLD * average_neighbour_distance;
+        let safety_threshold = SELF_INTERSECTION_SAFETY_DISTANCE * average_neighbour_distance;
         for ((i, p11), p12) in self
             .segment
             .points
@@ -50,9 +62,7 @@ impl<'a> Segment<'a> {
                     .points
                     .iter()
                     .enumerate()
-                    .find(|(j, p)| {
-                        *j > i && euclidean_distance(p, p11) > SELF_INTERSECTION_SAFETY_DISTANCE
-                    })
+                    .find(|(j, p)| *j > i && euclidean_distance(p, p11) > safety_threshold)
                     .map(|(j, _)| j);
                 match start_index {
                     Some(start_index) => start_index,
@@ -64,15 +74,16 @@ impl<'a> Segment<'a> {
             let is_close = other.segment.points[search_start..]
                 .iter()
                 .zip(other.segment.points[search_start + 1..].iter())
-                .any(|(p21, p22)| line_segments_close(p11, p12, p21, p22));
+                .any(|(p21, p22)| line_segments_distance(p11, p12, p21, p22) < point_threshold);
             if is_close {
                 let last_intersection = intersections.last_mut();
                 let mut same_intersection = false;
                 if let Some(mut intersection) = last_intersection {
-                    if points_close(
+                    if euclidean_distance(
                         &self.segment.points[intersection.end],
                         &self.segment.points[i],
-                    ) {
+                    ) < point_threshold
+                    {
                         intersection.end = i;
                         same_intersection = true;
                     }

@@ -55,6 +55,11 @@ mod tests {
         ]);
     }
 
+    #[test]
+    fn test_self_intersection() {
+        test_splitting(&["tests/self_intersection/1.gpx"]);
+    }
+
     fn test_splitting(files: &[&str]) {
         let gpx_list: Vec<_> = files
             .into_iter()
