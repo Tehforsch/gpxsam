@@ -1,16 +1,17 @@
 [package]
-name = "rgpx"
+name = "gpxsam"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "gpxsplit"
+name = "gpxsam"
 path = "src/main.rs"
 
 [dependencies]
 gpx = "0.8.5"
+geo = "0.18.0"
 eframe = "0.16.0" # Gives us egui, epi and web+native backends
 
 serde = { version = "1", features = ["derive"], optional = true }
