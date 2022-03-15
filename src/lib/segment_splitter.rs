@@ -1,9 +1,9 @@
 use gpx::Gpx;
 
-use super::{chunk::Chunk, segment::Segment};
+use super::chunk::Chunk;
 
 pub struct SegmentSplitter<'a> {
-    pub segments: Vec<Segment<'a>>,
+    pub segments: Vec<Chunk<'a>>,
 }
 
 impl<'a> SegmentSplitter<'a> {
@@ -18,7 +18,7 @@ impl<'a> SegmentSplitter<'a> {
     fn add_gpx(&mut self, gpx: &'a Gpx) {
         for track in gpx.tracks.iter() {
             for segment in track.segments.iter() {
-                self.segments.push(Segment { segment })
+                self.segments.push(Chunk::from_entire_segment(segment))
             }
         }
     }

@@ -1,5 +1,5 @@
 mod chunk;
 mod config;
 mod geom_utils;
-mod segment;
+mod intersection;
 pub mod segment_splitter;
