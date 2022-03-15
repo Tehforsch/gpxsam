@@ -129,7 +129,6 @@ impl<'a> Chunk<'a> {
         let mut chunks = vec![];
         let mut add_if_length_over_threshold = |start, end| {
             let length = self.length_between(start, end);
-            println!("{start}, {end}, {}", length / significant_chunk_threshold);
             if length > significant_chunk_threshold {
                 chunks.push(Chunk {
                     parent: self.parent,
