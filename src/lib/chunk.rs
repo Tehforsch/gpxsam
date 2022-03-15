@@ -23,7 +23,7 @@ impl<'a> Chunk<'a> {
         }
     }
 
-    pub fn self_intersect<'b>(&'b self) -> Vec<Chunk<'b>> {
+    pub fn self_intersect(&self) -> Vec<Chunk<'a>> {
         let intersections = self.get_intersections_with(&self, true);
         self.cut_into_chunks(intersections)
     }
@@ -116,7 +116,7 @@ impl<'a> Chunk<'a> {
         Box::new(slice_before.chain(slice_after))
     }
 
-    fn cut_into_chunks(&'a self, mut intersections: Vec<Intersection>) -> Vec<Chunk<'a>> {
+    pub fn cut_into_chunks(&self, mut intersections: Vec<Intersection>) -> Vec<Chunk<'a>> {
         let average_neighbour_distance = self.get_average_distance_next_point();
         let significant_chunk_threshold = CHUNK_DISTANCE_THRESHOLD * average_neighbour_distance;
         let start = Intersection { start: 0, end: 0 };

@@ -3,12 +3,12 @@ use gpx::Gpx;
 use super::chunk::Chunk;
 
 pub struct SegmentSplitter<'a> {
-    pub segments: Vec<Chunk<'a>>,
+    pub chunks: Vec<Chunk<'a>>,
 }
 
 impl<'a> SegmentSplitter<'a> {
     pub fn from_gpx(gpx_list: impl Iterator<Item = &'a Gpx>) -> SegmentSplitter<'a> {
-        let mut splitter = SegmentSplitter { segments: vec![] };
+        let mut splitter = SegmentSplitter { chunks: vec![] };
         for gpx in gpx_list {
             splitter.add_gpx(gpx)
         }
@@ -18,24 +18,52 @@ impl<'a> SegmentSplitter<'a> {
     fn add_gpx(&mut self, gpx: &'a Gpx) {
         for track in gpx.tracks.iter() {
             for segment in track.segments.iter() {
-                self.segments.push(Chunk::from_entire_segment(segment))
+                self.add_chunk(Chunk::from_entire_segment(segment));
             }
         }
     }
 
-    pub fn split(&mut self) -> Vec<Chunk<'_>> {
-        let mut chunks = vec![];
-        for segment in self.segments.iter() {
-            let new_chunks = segment.self_intersect();
-            for chunk in new_chunks {
-                Self::add_chunk(&mut chunks, chunk);
-            }
+    pub fn add_chunk(&mut self, new_chunk: Chunk<'a>) {
+        let new_chunks = new_chunk.self_intersect();
+        for chunk in new_chunks {
+            self.add_self_intersection_free_chunk(chunk);
         }
-        chunks
     }
 
-    pub fn add_chunk<'b>(chunks: &mut Vec<Chunk<'b>>, chunk: Chunk<'b>) {
-        chunks.push(chunk);
+    pub fn add_self_intersection_free_chunk(&mut self, new_chunk: Chunk<'a>) {
+        self.chunks.push(new_chunk);
+        self.split_at_all_intersections();
+    }
+
+    pub fn split_at_all_intersections<'b>(&mut self) {
+        while {
+            let mut found_any_intersections = false;
+            let num_chunks = self.chunks.len();
+            for (i, j) in
+                (0..num_chunks).flat_map(move |i| ((i + 1)..num_chunks).map(move |j| (i, j)))
+            {
+                // We don't do any self intersection checks here anymore.
+                if self.chunks[i].parent == self.chunks[j].parent {
+                    continue;
+                }
+                let intersections = self.chunks[i].get_intersections_with(&self.chunks[j], false);
+                if !intersections.is_empty() {
+                    found_any_intersections = true;
+                    let chunk1 = self.chunks.remove(j);
+                    let chunk2 = self.chunks.remove(i);
+                    let new_chunks1 = chunk1.cut_into_chunks(intersections.clone());
+                    let new_chunks2 = chunk2.cut_into_chunks(intersections);
+                    for chunk in new_chunks1 {
+                        self.chunks.push(chunk);
+                    }
+                    for chunk in new_chunks2 {
+                        self.chunks.push(chunk);
+                    }
+                    break;
+                }
+            }
+            found_any_intersections
+        } {}
     }
 }
 
@@ -47,13 +75,16 @@ mod tests {
 
     use super::SegmentSplitter;
 
-    // #[test]
-    // fn test_simple_intersection() {
-    //     test_splitting(&[
-    //         "tests/simple_intersection/1.gpx",
-    //         "tests/simple_intersection/2.gpx",
-    //     ], 4);
-    // }
+    #[test]
+    fn test_simple_intersection() {
+        test_splitting(
+            &[
+                "tests/simple_intersection/1.gpx",
+                "tests/simple_intersection/2.gpx",
+            ],
+            4,
+        );
+    }
 
     #[test]
     fn test_self_intersection() {
@@ -70,6 +101,6 @@ mod tests {
             })
             .collect();
         let mut splitter = SegmentSplitter::from_gpx(gpx_list.iter());
-        assert_eq!(splitter.split().len(), num_chunks_desired)
+        assert_eq!(splitter.chunks.len(), num_chunks_desired)
     }
 }

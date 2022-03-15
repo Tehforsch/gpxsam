@@ -18,5 +18,4 @@ fn main() {
     })
     .collect();
     let mut splitter = SegmentSplitter::from_gpx(gpx_list.iter());
-    splitter.split();
 }
