@@ -33,11 +33,6 @@ impl<'a> Chunk<'a> {
         &self.parent.points[self.start..self.end]
     }
 
-    pub fn intersect_with<'b>(&'b self, other: &Chunk<'a>) -> Vec<Chunk<'b>> {
-        let intersections = self.get_intersections_with(other, false);
-        self.cut_into_chunks(intersections)
-    }
-
     pub fn get_intersections_with(
         &self,
         other: &Chunk<'a>,
@@ -104,7 +99,7 @@ impl<'a> Chunk<'a> {
             .filter(|(j, p)| *j < i && euclidean_distance(p, &self.points()[i]) > safety_threshold)
             .map(|(j, _)| j)
             .max();
-        let mut slice_before = match end_index_before {
+        let slice_before = match end_index_before {
             Some(end_index_before) => self.points()[0..end_index_before]
                 .iter()
                 .zip(self.points()[1..end_index_before].iter()),
@@ -112,7 +107,7 @@ impl<'a> Chunk<'a> {
             None => [].iter().zip(&[]),
         };
 
-        let mut slice_after = match start_index_after {
+        let slice_after = match start_index_after {
             Some(start_index_after) => self.points()[start_index_after..]
                 .iter()
                 .zip(self.points()[start_index_after + 1..].iter()),

@@ -3,9 +3,9 @@ use gpx::Waypoint;
 
 pub fn line_segments_distance(
     p11: &Waypoint,
-    p12: &Waypoint,
+    _p12: &Waypoint,
     p21: &Waypoint,
-    p22: &Waypoint,
+    _p22: &Waypoint,
 ) -> f64 {
     // Temporary, while I can't be bothered to do the proper math
     euclidean_distance(p11, p21)
