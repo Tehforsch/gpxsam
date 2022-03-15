@@ -76,13 +76,25 @@ mod tests {
     use super::SegmentSplitter;
 
     #[test]
-    fn test_simple_intersection() {
+    fn test_simple_intersection_1() {
         test_splitting(
             &[
-                "tests/simple_intersection/1.gpx",
-                "tests/simple_intersection/2.gpx",
+                "tests/simple_intersection_1/1.gpx",
+                "tests/simple_intersection_1/2.gpx",
             ],
             4,
+        );
+    }
+
+    #[test]
+    fn test_simple_intersection_2() {
+        test_splitting(
+            &[
+                "tests/simple_intersection_2/1.gpx",
+                "tests/simple_intersection_2/2.gpx",
+                "tests/simple_intersection_2/3.gpx",
+            ],
+            7,
         );
     }
 
