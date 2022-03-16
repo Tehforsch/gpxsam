@@ -114,7 +114,7 @@ mod tests {
                 read(reader).unwrap()
             })
             .collect();
-        let mut splitter = SegmentSplitter::from_gpx(gpx_list.iter());
+        let splitter = SegmentSplitter::from_gpx(gpx_list.iter());
         assert_eq!(splitter.chunks.len(), num_chunks_desired)
     }
 }
