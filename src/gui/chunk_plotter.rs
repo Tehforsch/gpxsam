@@ -17,8 +17,9 @@ impl ChunkPlotter {
             .view_aspect(1.0)
             .show_x(false)
             .show_y(false)
-            .allow_drag(false)
-            .allow_zoom(false)
+            .allow_drag(true)
+            .allow_zoom(true)
+            .show_axes([false, false])
             .show_background(false);
         Self {
             plot,
