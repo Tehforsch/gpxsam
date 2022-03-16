@@ -42,7 +42,6 @@ impl<'a> SegmentSplitter<'a> {
             for (i, j) in
                 (0..num_chunks).flat_map(move |i| ((i + 1)..num_chunks).map(move |j| (i, j)))
             {
-                println!("Checking {} vs {}", i, j);
                 // We don't do any self intersection checks here anymore.
                 if self.chunks[i].parent == self.chunks[j].parent {
                     continue;

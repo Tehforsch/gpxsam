@@ -1,14 +1,16 @@
 use std::{fs::File, io::BufReader};
 
 use gpx::read;
-use lib::segment_splitter::SegmentSplitter;
+use gui::Gui;
 
+mod gui;
 mod lib;
 
 fn main() {
     let gpx_list: Vec<_> = [
-        "tests/simple_intersection/1.gpx",
-        "tests/simple_intersection/2.gpx",
+        "tests/simple_intersection_2/1.gpx",
+        "tests/simple_intersection_2/2.gpx",
+        "tests/simple_intersection_2/3.gpx",
     ]
     .into_iter()
     .map(|file| {
@@ -17,6 +19,7 @@ fn main() {
         read(reader).unwrap()
     })
     .collect();
-    let splitter = SegmentSplitter::from_gpx(gpx_list.iter());
-    println!("{}", splitter.chunks.len());
+    let app = Gui::new(&gpx_list);
+    let native_options = eframe::NativeOptions::default();
+    eframe::run_native(Box::new(app), native_options);
 }
