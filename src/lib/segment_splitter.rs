@@ -42,17 +42,19 @@ impl<'a> SegmentSplitter<'a> {
             for (i, j) in
                 (0..num_chunks).flat_map(move |i| ((i + 1)..num_chunks).map(move |j| (i, j)))
             {
+                println!("Checking {} vs {}", i, j);
                 // We don't do any self intersection checks here anymore.
                 if self.chunks[i].parent == self.chunks[j].parent {
                     continue;
                 }
-                let intersections = self.chunks[i].get_intersections_with(&self.chunks[j], false);
-                if !intersections.is_empty() {
+                let intersections1 = self.chunks[i].get_intersections_with(&self.chunks[j], false);
+                let intersections2 = self.chunks[j].get_intersections_with(&self.chunks[i], false);
+                if !intersections1.is_empty() {
                     found_any_intersections = true;
-                    let chunk1 = self.chunks.remove(j);
-                    let chunk2 = self.chunks.remove(i);
-                    let new_chunks1 = chunk1.cut_into_chunks(intersections.clone());
-                    let new_chunks2 = chunk2.cut_into_chunks(intersections);
+                    let chunk2 = self.chunks.remove(j);
+                    let chunk1 = self.chunks.remove(i);
+                    let new_chunks1 = chunk1.cut_into_chunks(intersections1);
+                    let new_chunks2 = chunk2.cut_into_chunks(intersections2);
                     for chunk in new_chunks1 {
                         self.chunks.push(chunk);
                     }

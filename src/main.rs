@@ -17,5 +17,6 @@ fn main() {
         read(reader).unwrap()
     })
     .collect();
-    let mut splitter = SegmentSplitter::from_gpx(gpx_list.iter());
+    let splitter = SegmentSplitter::from_gpx(gpx_list.iter());
+    println!("{}", splitter.chunks.len());
 }

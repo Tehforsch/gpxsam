@@ -8,6 +8,7 @@ use super::geom_utils::euclidean_distance;
 use super::geom_utils::line_segments_distance;
 use super::intersection::Intersection;
 
+#[derive(Debug)]
 pub struct Chunk<'a> {
     pub parent: &'a TrackSegment,
     pub start: usize,
@@ -38,7 +39,9 @@ impl<'a> Chunk<'a> {
         other_is_self: bool,
     ) -> Vec<Intersection> {
         let mut intersections: Vec<Intersection> = vec![];
-        let average_neighbour_distance = self.get_average_distance_next_point();
+        let average_neighbour_distance = self
+            .get_average_distance_next_point()
+            .min(other.get_average_distance_next_point());
         let point_threshold = POINT_DISTANCE_THRESHOLD * average_neighbour_distance;
         let safety_threshold = SELF_INTERSECTION_SAFETY_DISTANCE * average_neighbour_distance;
         for ((i, p11), p12) in self
