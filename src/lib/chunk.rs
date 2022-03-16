@@ -25,7 +25,7 @@ impl<'a> Chunk<'a> {
     }
 
     pub fn self_intersect(&self) -> Vec<Chunk<'a>> {
-        let intersections = self.get_intersections_with(&self, true);
+        let intersections = self.get_intersections_with(self, true);
         self.cut_into_chunks(intersections)
     }
 

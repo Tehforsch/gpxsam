@@ -35,7 +35,7 @@ impl<'a> SegmentSplitter<'a> {
         self.split_at_all_intersections();
     }
 
-    pub fn split_at_all_intersections<'b>(&mut self) {
+    pub fn split_at_all_intersections(&mut self) {
         while {
             let mut found_any_intersections = false;
             let num_chunks = self.chunks.len();
