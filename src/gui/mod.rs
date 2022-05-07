@@ -4,7 +4,6 @@ use gpx::Gpx;
 
 mod chunk_plotter;
 
-use crate::lib::chunk::Chunk;
 use crate::lib::segment_splitter::SegmentSplitter;
 
 use self::chunk_plotter::ChunkPlotter;
@@ -30,16 +29,7 @@ impl epi::App for Gui {
         let splitter = SegmentSplitter::from_gpx(self.files.iter());
         egui::CentralPanel::default().show(ctx, |ui| {
             let mut plot = ChunkPlotter::new();
-            // for f in self.files.iter() {
-            //     for track in f.tracks.iter() {
-            //         for segment in track.segments.iter() {
-            //             let chunk = Chunk::from_entire_segment(segment);
-            //             plot.add_chunk(chunk)
-            //         }
-            //     }
-            // }
             for chunk in splitter.chunks {
-                println!("{} {}", chunk.start, chunk.end);
                 plot.add_chunk(chunk)
             }
             plot.show(ui);
