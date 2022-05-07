@@ -100,7 +100,8 @@ impl<'a> Chunk<'a> {
             .enumerate()
             .filter(|(j, p)| *j < i && euclidean_distance(p, &self.points()[i]) > safety_threshold)
             .map(|(j, _)| j)
-            .max();
+            .max()
+            .filter(|j| j > &0); // Discard 0 as an index, since that would give us a non-overlapping slice in the next lines
         let slice_before = match end_index_before {
             Some(end_index_before) => self.points()[0..end_index_before]
                 .iter()
